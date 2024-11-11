@@ -11,6 +11,10 @@ BUILD_DIR=$1
 CACHE_DIR=$2
 ENV_DIR=$3
 BP_DIR=$(cd "$(dirname "${0:-}")"; cd ..; pwd)
+
+# shellcheck source=lib/tools.sh
+source "$BP_DIR/lib/tools.sh"
+
 DOWNLOAD_URL="https://github.com/bitwarden/sdk/releases/download/bws-v1.0.0/bws-x86_64-unknown-linux-gnu-1.0.0.zip"
 
 echo "DOWNLOAD_URL = " $DOWNLOAD_URL | indent
@@ -28,14 +32,14 @@ if ! unzip bws.zip; then
   exit 1
 fi
 
-echo "exporting PATH and LIBRARY_PATH" | indent
+echo "exporting PATH" | indent
 PROFILE_PATH="$BUILD_DIR/.profile.d/bws.sh"
 mkdir -p $(dirname $PROFILE_PATH)
 echo 'export PATH="$PATH:$BUILD_DIR/bws/bin"' >> $PROFILE_PATH
 
 echo "bws installation completed successfully" | indent
 
-# Source the profile script to update PATH and LD_LIBRARY_PATH
+# Source the profile script to update PATH
 source $PROFILE_PATH
 
 if ! "${BUILD_DIR}/bws" --version; then
@@ -50,14 +54,14 @@ fi
 BW_ACCESS_TOKEN="$(cat "${ENV_DIR}/BW_ACCESS_TOKEN")"
 
 # Load secrets and export as environment variables
-SECRET_FILE="$BUILD_DIR/.profile.d/bws_secrets.sh"
 "${BUILD_DIR}/bws" secret list --access-token ${BW_ACCESS_TOKEN} \
 | grep -E '"key"|"value"' \
 | sed -E 's/.*"key": "(.*)",/\1/;s/.*"value": "(.*)"/\1/;s/,$//' \
 | awk 'NR%2{key=$0; getline; if (!ENVIRON[key]) printf "export %s=\"%s\"\n", key, $0}' \
-> $SECRET_FILE
+| while read -r line; do
+    eval "$line"
+done
 
-# Source the secrets file to update environment variables
-source $SECRET_FILE
+export_env_dir $ENV_DIR
 
 echo "bws secrets loaded successfully" | indent
