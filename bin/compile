@@ -34,12 +34,10 @@ fi
 echo "exporting PATH and LIBRARY_PATH" | indent
 PROFILE_PATH="$BUILD_DIR/.profile.d/bws.sh"
 mkdir -p $(dirname $PROFILE_PATH)
-echo 'export PATH="$PATH:$HOME/vendor/bws/bin"' >> $PROFILE_PATH
-echo 'export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$HOME/vendor/bws/lib"' >> $PROFILE_PATH
+echo 'export PATH="$PATH:$BUILD_DIR/vendor/bws/bin"' >> $PROFILE_PATH
+echo 'export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$BUILD_DIR/vendor/bws/lib"' >> $PROFILE_PATH
 
 echo "bws installation completed successfully" | indent
-
-# use bws to load the secrets
 
 # Source the profile script to update PATH and LD_LIBRARY_PATH
 source $PROFILE_PATH
