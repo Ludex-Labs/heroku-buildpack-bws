@@ -1,0 +1,5 @@
+# heroku-buildpack-bws/bin/release
+#!/bin/bash
+echo "default_process_types:"
+echo "  web: echo 'Starting the app with custom buildpack...'"
+exit 0

@@ -1,0 +1,17 @@
+# heroku-buildpack-bws/bin/compile
+#!/bin/bash
+
+BUILD_DIR=$1
+CACHE_DIR=$2
+
+echo "Installing custom command-line tool..."
+
+# Copy the tool to the build directory
+mkdir -p $BUILD_DIR/.heroku_tool
+cp -r $(dirname $0)/../tool/* $BUILD_DIR/.heroku_tool/
+
+# Make the tool available on the PATH
+echo 'export PATH="$PATH:$HOME/.heroku_tool"' >> $BUILD_DIR/.profile.d/custom_tool.sh
+
+echo "Installation complete."
+exit 0
