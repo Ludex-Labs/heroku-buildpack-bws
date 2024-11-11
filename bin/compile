@@ -41,6 +41,9 @@ echo "bws installation completed successfully" | indent
 
 # use bws to load the secrets
 
+# Source the profile script to update PATH and LD_LIBRARY_PATH
+source $PROFILE_PATH
+
 if ! bws --version; then
   echo "Failed to run bws" | indent
   exit 1
