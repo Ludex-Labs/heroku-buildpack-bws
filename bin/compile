@@ -1,17 +1,38 @@
 # heroku-buildpack-bws/bin/compile
 #!/bin/bash
 
+set -e  # Exit immediately if a command exits with a non-zero status
+
+indent() {
+  sed -u 's/^/       /'
+}
+
+echo "-----> Install bws"
 BUILD_DIR=$1
-CACHE_DIR=$2
+VENDOR_DIR="vendor"
+DOWNLOAD_URL="https://github.com/bitwarden/sdk/releases/download/bws-v1.0.0/bws-x86_64-unknown-linux-gnu-1.0.0.zip"
 
-echo "Installing custom command-line tool..."
+echo "DOWNLOAD_URL = " $DOWNLOAD_URL | indent
 
-# Copy the tool to the build directory
-mkdir -p $BUILD_DIR/.heroku_tool
-cp -r $(dirname $0)/../tool/* $BUILD_DIR/.heroku_tool/
+cd $BUILD_DIR
+mkdir -p $VENDOR_DIR
+cd $VENDOR_DIR
 
-# Make the tool available on the PATH
-echo 'export PATH="$PATH:$HOME/.heroku_tool"' >> $BUILD_DIR/.profile.d/bws
+# Download and unzip the file, with error handling
+if ! curl -L --fail --silent $DOWNLOAD_URL -o bws.zip; then
+  echo "Failed to download bws" | indent
+  exit 1
+fi
 
-echo "Installation complete."
-exit 0
+if ! unzip bws.zip; then
+  echo "Failed to unzip bws" | indent
+  exit 1
+fi
+
+echo "exporting PATH and LIBRARY_PATH" | indent
+PROFILE_PATH="$BUILD_DIR/.profile.d/bws.sh"
+mkdir -p $(dirname $PROFILE_PATH)
+echo 'export PATH="$PATH:$HOME/vendor/bws/bin"' >> $PROFILE_PATH
+echo 'export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$HOME/vendor/bws/lib"' >> $PROFILE_PATH
+
+echo "bws installation completed successfully" | indent
