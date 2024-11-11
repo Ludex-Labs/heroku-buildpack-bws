@@ -52,8 +52,8 @@ BW_ACCESS_TOKEN="$(cat "${ENV_DIR}/BW_ACCESS_TOKEN")"
 # Load secrets and export as environment variables
 "${BUILD_DIR}/bws" secret list --access-token ${BW_ACCESS_TOKEN} \
 | grep -E '"key"|"value"' \
-| sed -E 's/.*"key": "(.*)",/\1/;s/.*"value": "(.*)"/\1/' \
-| awk 'NR%2{printf "if [ -z \"${%s}\" ]; then export %s=", $0, $0; next}1' \
+| sed -E 's/.*"key": "(.*)",/\1/;s/.*"value": "(.*)"/\1/;s/,$//' \
+| awk 'NR%2{printf "if [ -z \"${%s}\" ]; then export %s=\"", $0, $0; next} {print $0 "\"; fi"}' \
 > $BP_DIR/bws_secrets
 
 # Source the generated script to export the variables
