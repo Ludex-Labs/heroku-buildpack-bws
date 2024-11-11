@@ -1,4 +1,3 @@
-# heroku-buildpack-bws/bin/detect
-#!/bin/bash
+#!/usr/bin/env bash
 echo "heroku-buildpack-bws"
 exit 0
