@@ -1,19 +1,19 @@
 #!/usr/bin/env bash
 
-set -e  # Exit immediately if a command exits with a non-zero status
+set -o errexit    # always exit on error
+set -o pipefail   # don't ignore exit codes when piping output
+
+[ "$BUILDPACK_XTRACE" ] && set -o xtrace
 
 indent() {
   sed -u 's/^/       /'
 }
 
 echo "-----> Install bws"
-BUILD_DIR=$1
-CACHE_DIR=$2
-ENV_DIR=$3
+BUILD_DIR=${1:-}
+CACHE_DIR=${2:-}
+ENV_DIR=${3:-}
 BP_DIR=$(cd "$(dirname "${0:-}")"; cd ..; pwd)
-
-# shellcheck source=lib/tools.sh
-source "$BP_DIR/lib/tools.sh"
 
 DOWNLOAD_URL="https://github.com/bitwarden/sdk/releases/download/bws-v1.0.0/bws-x86_64-unknown-linux-gnu-1.0.0.zip"
 
@@ -32,15 +32,7 @@ if ! unzip bws.zip; then
   exit 1
 fi
 
-echo "exporting PATH" | indent
-PROFILE_PATH="$BUILD_DIR/.profile.d/bws.sh"
-mkdir -p $(dirname $PROFILE_PATH)
-echo 'export PATH="$PATH:$BUILD_DIR/bws/bin"' >> $PROFILE_PATH
-
 echo "bws installation completed successfully" | indent
-
-# Source the profile script to update PATH
-source $PROFILE_PATH
 
 if ! "${BUILD_DIR}/bws" --version; then
   echo "Failed to run bws" | indent
@@ -53,15 +45,11 @@ if [ ! -f "${ENV_DIR}/BW_ACCESS_TOKEN" ]; then
 fi
 BW_ACCESS_TOKEN="$(cat "${ENV_DIR}/BW_ACCESS_TOKEN")"
 
-# Load secrets and export as environment variables
+# Load secrets and export as environment variables, writing to env.sh
 "${BUILD_DIR}/bws" secret list --access-token ${BW_ACCESS_TOKEN} \
 | grep -E '"key"|"value"' \
 | sed -E 's/.*"key": "(.*)",/\1/;s/.*"value": "(.*)"/\1/;s/,$//' \
 | awk 'NR%2{key=$0; getline; if (!ENVIRON[key]) printf "export %s=\"%s\"\n", key, $0}' \
-| while read -r line; do
-    eval "$line"
-done
-
-export_env_dir $ENV_DIR
+> "$BP_DIR/export"
 
 echo "bws secrets loaded successfully" | indent
