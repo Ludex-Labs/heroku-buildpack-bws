@@ -9,15 +9,20 @@ indent() {
   sed -u 's/^/       /'
 }
 
-echo "-----> Install bws"
+echo "-----> Install BitWarden Secrets Manager CLI" | indent
 BUILD_DIR=${1:-}
 CACHE_DIR=${2:-}
 ENV_DIR=${3:-}
 BP_DIR=$(cd "$(dirname "${0:-}")"; cd ..; pwd)
 
 DOWNLOAD_URL="https://github.com/bitwarden/sdk/releases/download/bws-v1.0.0/bws-x86_64-unknown-linux-gnu-1.0.0.zip"
-
 echo "DOWNLOAD_URL = " $DOWNLOAD_URL | indent
+
+# shellcheck source=lib/utils.sh
+source "${BP_DIR}/lib/utils.sh"
+
+# Create temp profile directory
+mkdir -p "${BP_DIR}/profile"
 
 cd $BUILD_DIR
 
@@ -32,7 +37,7 @@ if ! unzip bws.zip; then
   exit 1
 fi
 
-echo "bws installation completed successfully" | indent
+echo "BitWarden CLI installation completed successfully" | indent
 
 if ! "${BUILD_DIR}/bws" --version; then
   echo "Failed to run bws" | indent
@@ -50,6 +55,8 @@ BW_ACCESS_TOKEN="$(cat "${ENV_DIR}/BW_ACCESS_TOKEN")"
 | grep -E '"key"|"value"' \
 | sed -E 's/.*"key": "(.*)",/\1/;s/.*"value": "(.*)"/\1/;s/,$//' \
 | awk 'NR%2{key=$0; getline; if (!ENVIRON[key]) printf "export %s=\"%s\"\n", key, $0}' \
-> "$BP_DIR/export"
+> "$BP_DIR/profile/env.sh"
 
-echo "bws secrets loaded successfully" | indent
+write_profile "$BP_DIR" "$BUILD_DIR"
+
+echo "BitWarden secrets loaded successfully" | indent
