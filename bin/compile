@@ -59,6 +59,8 @@ BW_ACCESS_TOKEN="$(cat "${ENV_DIR}/BW_ACCESS_TOKEN")"
 
 source "$BP_DIR/export"
 
+mkdir -p "$BUILD_DIR/.profile.d"
+
 # Write the environment variables to the env file
 # Read the file 'export' and replace each line value by the environment variable key
 while IFS= read -r line; do
