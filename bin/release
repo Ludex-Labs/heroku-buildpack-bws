@@ -1,3 +1,14 @@
 #!/usr/bin/env bash
-echo "--- bws release ---"
-exit 0
+
+set -euo pipefail
+shopt -s inherit_errexit
+
+BUILD_DIR="${1}"
+
+# The absolute path to the root of the buildpack.
+BUILDPACK_DIR=$(cd "$(dirname "$(dirname "${BASH_SOURCE[0]}")")" && pwd)
+
+# Unfortunately the build system doesn't source the `export` script before
+# running `bin/release`.
+# shellcheck source=/dev/null
+source "${BUILDPACK_DIR}/export"

@@ -71,6 +71,6 @@ while IFS= read -r line; do
 done < "$BP_DIR/export" > "$BUILD_DIR/.profile.d/bws_env.sh"
 
 # Clean up
-rm "${BP_DIR}/export"
+#rm "${BP_DIR}/export"
 
 echo "BitWarden secrets loaded successfully" | indent
