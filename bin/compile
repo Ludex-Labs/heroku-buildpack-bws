@@ -55,8 +55,20 @@ BW_ACCESS_TOKEN="$(cat "${ENV_DIR}/BW_ACCESS_TOKEN")"
 | grep -E '"key"|"value"' \
 | sed -E 's/.*"key": "(.*)",/\1/;s/.*"value": "(.*)"/\1/;s/,$//' \
 | awk 'NR%2{key=$0; getline; if (!ENVIRON[key]) printf "export %s=\"%s\"\n", key, $0}' \
-> "$BP_DIR/profile/env.sh"
+> "$BP_DIR/export"
 
-write_profile "$BP_DIR" "$BUILD_DIR"
+source "$BP_DIR/export"
+
+# Write the environment variables to the env file
+# Read the file 'export' and replace each line value by the environment variable key
+while IFS= read -r line; do
+  # Extract the key from the line
+  key=$(echo "$line" | cut -d'=' -f1 | cut -d' ' -f2)
+  # Replace the value with the environment variable key
+  echo "export $key=\${$key}"
+done < "$BP_DIR/export" > "$BUILD_DIR/.profile.d/bws_env.sh"
+
+# Clean up
+rm "${BP_DIR}/export"
 
 echo "BitWarden secrets loaded successfully" | indent
