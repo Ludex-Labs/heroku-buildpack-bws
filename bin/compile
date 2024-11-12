@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+# bin/compile BUILD_DIR CACHE_DIR ENV_DIR
+
 set -o errexit    # always exit on error
 set -o pipefail   # don't ignore exit codes when piping output
 
@@ -10,36 +12,47 @@ indent() {
 }
 
 echo "-----> Install BitWarden Secrets Manager CLI" | indent
-BUILD_DIR=${1:-}
-CACHE_DIR=${2:-}
-ENV_DIR=${3:-}
-BP_DIR=$(cd "$(dirname "${0:-}")"; cd ..; pwd)
+
+BUILD_DIR=${1}
+CACHE_DIR=${2}
+ENV_DIR=${3}
+
+# The absolute path to the root of the buildpack.
+BUILDPACK_DIR=$(cd "$(dirname "$(dirname "${BASH_SOURCE[0]}")")" && pwd)
 
 DOWNLOAD_URL="https://github.com/bitwarden/sdk/releases/download/bws-v1.0.0/bws-x86_64-unknown-linux-gnu-1.0.0.zip"
 echo "DOWNLOAD_URL = " $DOWNLOAD_URL | indent
 
 # shellcheck source=lib/utils.sh
-source "${BP_DIR}/lib/utils.sh"
+source "${BUILDPACK_DIR}/lib/utils.sh"
 
-# Create temp profile directory
-mkdir -p "${BP_DIR}/profile"
+#cd $BUILD_DIR
 
-cd $BUILD_DIR
+# Download the BitWarden CLI in the cache directory
+cd "$CACHE_DIR"
 
-# Download and unzip the file, with error handling
-if ! curl -L --fail $DOWNLOAD_URL -o bws.zip; then
-  echo "Failed to download bws" | indent
-  exit 1
-fi
+# Make sure the bws binary is not already installed
+if [ -f "bws" ]; then
+  echo "BitWarden CLI already installed" | indent
+else
+  # Download and unzip the file, with error handling
+  if ! curl -L --fail $DOWNLOAD_URL -o bws.zip; then
+    echo "Failed to download bws" | indent
+    exit 1
+  fi
 
-if ! unzip bws.zip; then
-  echo "Failed to unzip bws" | indent
-  exit 1
+  if ! unzip bws.zip; then
+    echo "Failed to unzip bws" | indent
+    exit 1
+  fi
+
+  # Ensure the bws binary is executable
+  chmod +x bws
 fi
 
 echo "BitWarden CLI installation completed successfully" | indent
 
-if ! "${BUILD_DIR}/bws" --version; then
+if ! ./bws --version; then
   echo "Failed to run bws" | indent
   exit 1
 fi
@@ -51,15 +64,31 @@ fi
 BW_ACCESS_TOKEN="$(cat "${ENV_DIR}/BW_ACCESS_TOKEN")"
 
 # Load secrets and export as environment variables, writing to env.sh
-"${BUILD_DIR}/bws" secret list --access-token ${BW_ACCESS_TOKEN} \
+"./bws" secret list --access-token ${BW_ACCESS_TOKEN} \
 | grep -E '"key"|"value"' \
 | sed -E 's/.*"key": "(.*)",/\1/;s/.*"value": "(.*)"/\1/;s/,$//' \
 | awk 'NR%2{key=$0; getline; if (!ENVIRON[key]) printf "export %s=\"%s\"\n", key, $0}' \
-> "$BP_DIR/export"
+> "$BUILDPACK_DIR/export"
 
-source "$BP_DIR/export"
+source "$BUILDPACK_DIR/export"
 
-mkdir -p "$BUILD_DIR/.profile.d"
+cd "$BUILDPACK_DIR"
+# Switch to the environment directory
+cd "$ENV_DIR"
+
+while IFS= read -r line; do
+  # Extract the key from the line
+  key=$(echo "$line" | cut -d'=' -f1 | cut -d' ' -f2)
+  value=$(echo "$line" | cut -d'=' -f2 | sed 's/^"//;s/"$//')
+  # Add a file with the value
+  echo "$value" > "$key"
+done < "$BUILDPACK_DIR/export"
+
+cd "$BUILDPACK_DIR"
+# Switch back to the build directory
+cd "$BUILD_DIR"
+
+mkdir -p ".profile.d"
 
 # Write the environment variables to the env file
 # Read the file 'export' and replace each line value by the environment variable key
@@ -68,9 +97,11 @@ while IFS= read -r line; do
   key=$(echo "$line" | cut -d'=' -f1 | cut -d' ' -f2)
   # Replace the value with the environment variable key
   echo "export $key=\${$key}"
-done < "$BP_DIR/export" > "$BUILD_DIR/.profile.d/bws_env.sh"
+done < "$BUILDPACK_DIR/export" > ".profile.d/bws_env.sh"
 
 # Clean up
-#rm "${BP_DIR}/export"
+#rm "${BUILDPACK_DIR}/export"
+
+export_env_dir "$ENV_DIR"
 
 echo "BitWarden secrets loaded successfully" | indent
