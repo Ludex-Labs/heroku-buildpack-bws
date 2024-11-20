@@ -26,7 +26,7 @@ if [ ! -f "${ENV_DIR}/BW_ACCESS_TOKEN" ]; then
     echo "BW_ACCESS_TOKEN was not set. Aborting" | indent
     exit 1
 fi
-BW_ACCESS_TOKEN="$(cat "${ENV_DIR}/BW_PROJECT_ID")"
+BW_ACCESS_TOKEN="$(cat "${ENV_DIR}/BW_ACCESS_TOKEN")"
 
 if [ ! -f "${ENV_DIR}/BW_PROJECT_ID" ]; then
     echo "BW_PROJECT_ID was not set. Aborting" | indent
@@ -67,11 +67,8 @@ if ! ./bws --version; then
   exit 1
 fi
 
-echo $BW_ACCESS_TOKEN | indent
-echo $BW_PROJECT_ID | indent
-BWS_COMMAND="./bws" secret list --access-token ${BW_ACCESS_TOKEN} ${BW_PROJECT_ID} | indent
 # Load secrets and export as environment variables, writing to env.sh
-$BWS_COMMAND \
+"./bws" secret list --access-token "$BW_ACCESS_TOKEN" "$BW_PROJECT_ID" \
 | grep -E '"key"|"value"' \
 | sed -E 's/.*"key": "(.*)",/\1/;s/.*"value": "(.*)"/\1/;s/,$//' \
 | awk 'NR%2{key=$0; getline; if (!ENVIRON[key]) printf "export %s=\"%s\"\n", key, $0}' \
