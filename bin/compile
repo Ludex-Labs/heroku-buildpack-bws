@@ -100,7 +100,8 @@ cd "$BUILD_DIR"
 
 #mkdir -p ".profile.d"
 
-PROFILE_ENV_FILEPATH="${BUILD_DIR}.profile.d/bws_env.sh"
+PROFILE_ENV_FILEPATH="${BUILD_DIR}/.profile.d/bws_env.sh"
+mkdir -p "$(dirname "$PROFILE_ENV_FILEPATH")"
 # Write the environment variables to the env file
 # Read the file 'export' and replace each line value by the environment variable key
 while IFS= read -r line; do
