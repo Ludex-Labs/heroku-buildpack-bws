@@ -18,7 +18,20 @@ CACHE_DIR=${2}
 ENV_DIR=${3}
 
 # The absolute path to the root of the buildpack.
-BUILDPACK_DIR=$(cd "$(dirname "$(dirname "${BASH_SOURCE[0]}")")" && pwd)
+#BUILDPACK_DIR=$(cd "$(dirname "$(dirname "${BASH_SOURCE[0]}")")" && pwd)
+BUILDPACK_DIR=$(cd "$(dirname "${0:-}")"; cd ..; pwd)
+
+echo "BUILDPACK_DIR = " $BUILDPACK_DIR | indent
+
+# print current working directory
+#echo "Current working directory: $(pwd)" | indent
+
+echo "${ENV_DIR}/BW_ACCESS_TOKEN" | indent
+if [ ! -f "${ENV_DIR}/BW_ACCESS_TOKEN" ]; then
+    echo "BW_ACCESS_TOKEN was not set. Aborting" | indent
+    exit 1
+fi
+BW_ACCESS_TOKEN="$(cat "${ENV_DIR}/BW_ACCESS_TOKEN")"
 
 DOWNLOAD_URL="https://github.com/bitwarden/sdk/releases/download/bws-v1.0.0/bws-x86_64-unknown-linux-gnu-1.0.0.zip"
 echo "DOWNLOAD_URL = " $DOWNLOAD_URL | indent
@@ -26,6 +39,7 @@ echo "DOWNLOAD_URL = " $DOWNLOAD_URL | indent
 # shellcheck source=lib/utils.sh
 source "${BUILDPACK_DIR}/lib/utils.sh"
 
+cd "$BUILDPACK_DIR"
 # Download the BitWarden CLI in the cache directory
 cd "$CACHE_DIR"
 
@@ -54,12 +68,6 @@ if ! ./bws --version; then
   echo "Failed to run bws" | indent
   exit 1
 fi
-
-if [ ! -f "${ENV_DIR}/BW_ACCESS_TOKEN" ]; then
-    echo "BW_ACCESS_TOKEN was not set. Aborting" | indent
-    exit 1
-fi
-BW_ACCESS_TOKEN="$(cat "${ENV_DIR}/BW_ACCESS_TOKEN")"
 
 # Load secrets and export as environment variables, writing to env.sh
 "./bws" secret list --access-token ${BW_ACCESS_TOKEN} \

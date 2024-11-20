@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+# bin/release BUILD_DIR
+
 set -euo pipefail
 shopt -s inherit_errexit
 
@@ -7,6 +9,8 @@ BUILD_DIR="${1}"
 
 # The absolute path to the root of the buildpack.
 BUILDPACK_DIR=$(cd "$(dirname "$(dirname "${BASH_SOURCE[0]}")")" && pwd)
+
+echo "-----> Release BitWarden Secrets Manager CLI"
 
 # Unfortunately the build system doesn't source the `export` script before
 # running `bin/release`.
