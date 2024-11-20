@@ -107,10 +107,12 @@ mkdir -p "$(dirname "$PROFILE_ENV_FILEPATH")"
 while IFS= read -r line; do
   # Extract the key from the line
   key=$(echo "$line" | cut -d'=' -f1 | cut -d' ' -f2)
+  value=$(echo "$line" | cut -d'=' -f2 | sed 's/^"//;s/"$//')
   # Replace the value with the environment variable key
-  echo "export $key=\${$key}"
+#  echo "export $key=\${$key}"
+  echo "export $key=\${$value}"
 done < "$BUILDPACK_DIR/export" > "$PROFILE_ENV_FILEPATH"
-echo "export TEST123=ABC123" >> "$PROFILE_ENV_FILEPATH"
+#echo "export TEST123=ABC123" >> "$PROFILE_ENV_FILEPATH"
 #
 chmod +x "$PROFILE_ENV_FILEPATH"
 cat "$PROFILE_ENV_FILEPATH" | indent
