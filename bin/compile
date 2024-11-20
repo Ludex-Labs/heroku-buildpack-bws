@@ -77,24 +77,26 @@ fi
 > "$BUILDPACK_DIR/export"
 
 source "$BUILDPACK_DIR/export"
+cat "$BUILDPACK_DIR/export" | indent
 
 cd "$BUILDPACK_DIR"
 # Switch to the environment directory
 cd "$ENV_DIR"
+ls -la
 
-while IFS= read -r line; do
-  # Extract the key from the line
-  key=$(echo "$line" | cut -d'=' -f1 | cut -d' ' -f2)
-  value=$(echo "$line" | cut -d'=' -f2 | sed 's/^"//;s/"$//')
-  # Add a file with the value
-  echo "$value" > "$key"
-done < "$BUILDPACK_DIR/export"
+#while IFS= read -r line; do
+#  # Extract the key from the line
+#  key=$(echo "$line" | cut -d'=' -f1 | cut -d' ' -f2)
+#  value=$(echo "$line" | cut -d'=' -f2 | sed 's/^"//;s/"$//')
+#  # Add a file with the value
+#  echo "$value" > "$key"
+#done < "$BUILDPACK_DIR/export"
 
 cd "$BUILDPACK_DIR"
 # Switch back to the build directory
 cd "$BUILD_DIR"
 
-mkdir -p ".profile.d"
+#mkdir -p ".profile.d"
 
 # Write the environment variables to the env file
 # Read the file 'export' and replace each line value by the environment variable key
@@ -110,6 +112,6 @@ mkdir -p ".profile.d"
 # Clean up
 #rm "${BUILDPACK_DIR}/export"
 
-export_env_dir "$ENV_DIR"
+#export_env_dir "$ENV_DIR"
 
 echo "BitWarden secrets loaded successfully" | indent
