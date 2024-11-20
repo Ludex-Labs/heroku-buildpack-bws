@@ -110,6 +110,7 @@ while IFS= read -r line; do
   # Replace the value with the environment variable key
   echo "export $key=\${$key}"
 done < "$BUILDPACK_DIR/export" > "$PROFILE_ENV_FILEPATH"
+echo "export TEST123=ABC123" >> "$PROFILE_ENV_FILEPATH"
 #
 chmod +x "$PROFILE_ENV_FILEPATH"
 cat "$PROFILE_ENV_FILEPATH" | indent
