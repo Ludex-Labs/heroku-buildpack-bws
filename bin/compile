@@ -67,22 +67,19 @@ if ! ./bws --version; then
   exit 1
 fi
 
-# Load secrets and export as environment variables, writing to env.sh
-"./bws" secret list --access-token "$BW_ACCESS_TOKEN" "$BW_PROJECT_ID" \
-| grep -E '"key"|"value"' \
-| sed -E 's/.*"key": "(.*)",/\1/;s/.*"value": "(.*)"/\1/;s/,$//' \
-| awk 'NR%2{key=$0; getline; if (!ENVIRON[key]) printf "export %s=\"%s\"\n", key, $0}' \
-> "$BUILDPACK_DIR/export"
+# Run the command and capture the output and exit status
+"./bws" secret list --access-token "$BW_ACCESS_TOKEN" "$BW_PROJECT_ID" --output env \
+| sed 's/^/export /' > "$BUILDPACK_DIR/export"
 
+echo "Source the export file" | indent
 # Source the export file to load the environment variables for the next script (but not for the heroku app)
 source "$BUILDPACK_DIR/export"
 
 cd "$BUILDPACK_DIR"
 # Switch to the environment directory
 cd "$ENV_DIR"
-echo "ENV_DIR = " "$ENV_DIR" | indent
-ls -la
 
+echo "Write env variables to env folder" | indent
 while IFS= read -r line; do
   # Extract the key from the line
   key=$(echo "$line" | cut -d'=' -f1 | cut -d' ' -f2)
@@ -98,6 +95,7 @@ cd "$BUILD_DIR"
 PROFILE_ENV_FILEPATH="${BUILD_DIR}/.profile.d/bws_env.sh"
 mkdir -p "$(dirname "$PROFILE_ENV_FILEPATH")"
 # Write the environment variables to the env file
+echo "Write env variables to .profile.d" | indent
 while IFS= read -r line; do
   # Extract the key from the line
   key=$(echo "$line" | cut -d'=' -f1 | cut -d' ' -f2)
@@ -106,6 +104,5 @@ while IFS= read -r line; do
 done < "$BUILDPACK_DIR/export" > "$PROFILE_ENV_FILEPATH"
 
 chmod +x "$PROFILE_ENV_FILEPATH"
-#cat "$PROFILE_ENV_FILEPATH" | indent
 
 echo "BitWarden secrets loaded successfully" | indent
