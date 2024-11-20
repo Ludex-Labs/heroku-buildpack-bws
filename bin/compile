@@ -68,7 +68,7 @@ if ! ./bws --version; then
 fi
 
 # Load secrets and export as environment variables, writing to env.sh
-"./bws" secret list --access-token "$BW_ACCESS_TOKEN" "$BW_PROJECT_ID" \
+"./bws" secret list --access-token ${BW_ACCESS_TOKEN} ${BW_PROJECT_ID} \
 | grep -E '"key"|"value"' \
 | sed -E 's/.*"key": "(.*)",/\1/;s/.*"value": "(.*)"/\1/;s/,$//' \
 | awk 'NR%2{key=$0; getline; if (!ENVIRON[key]) printf "export %s=\"%s\"\n", key, $0}' \
