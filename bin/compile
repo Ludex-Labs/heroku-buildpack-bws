@@ -110,7 +110,7 @@ while IFS= read -r line; do
   value=$(echo "$line" | cut -d'=' -f2 | sed 's/^"//;s/"$//')
   # Replace the value with the environment variable key
 #  echo "export $key=\${$key}"
-  echo "export $key=\${$value}"
+  echo "export $key=\"$value\""
 done < "$BUILDPACK_DIR/export" > "$PROFILE_ENV_FILEPATH"
 #echo "export TEST123=ABC123" >> "$PROFILE_ENV_FILEPATH"
 #
