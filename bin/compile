@@ -100,6 +100,7 @@ cd "$BUILD_DIR"
 
 #mkdir -p ".profile.d"
 
+PROFILE_ENV_FILEPATH="${BUILD_DIR}.profile.d/bws_env.sh"
 # Write the environment variables to the env file
 # Read the file 'export' and replace each line value by the environment variable key
 while IFS= read -r line; do
@@ -107,10 +108,10 @@ while IFS= read -r line; do
   key=$(echo "$line" | cut -d'=' -f1 | cut -d' ' -f2)
   # Replace the value with the environment variable key
   echo "export $key=\${$key}"
-done < "$BUILDPACK_DIR/export" > ".profile.d/bws_env.sh"
+done < "$BUILDPACK_DIR/export" > "$PROFILE_ENV_FILEPATH"
 #
-chmod +x ".profile.d/bws_env.sh"
-cat ".profile.d/bws_env.sh" | indent
+chmod +x "$PROFILE_ENV_FILEPATH"
+cat "$PROFILE_ENV_FILEPATH" | indent
 
 # Clean up
 #rm "${BUILDPACK_DIR}/export"
