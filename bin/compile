@@ -18,26 +18,24 @@ CACHE_DIR=${2}
 ENV_DIR=${3}
 
 # The absolute path to the root of the buildpack.
-#BUILDPACK_DIR=$(cd "$(dirname "$(dirname "${BASH_SOURCE[0]}")")" && pwd)
 BUILDPACK_DIR=$(cd "$(dirname "${0:-}")"; cd ..; pwd)
 
 echo "BUILDPACK_DIR = " $BUILDPACK_DIR | indent
 
-# print current working directory
-#echo "Current working directory: $(pwd)" | indent
-
-echo "${ENV_DIR}/BW_ACCESS_TOKEN" | indent
 if [ ! -f "${ENV_DIR}/BW_ACCESS_TOKEN" ]; then
     echo "BW_ACCESS_TOKEN was not set. Aborting" | indent
     exit 1
 fi
-BW_ACCESS_TOKEN="$(cat "${ENV_DIR}/BW_ACCESS_TOKEN")"
+BW_ACCESS_TOKEN="$(cat "${ENV_DIR}/BW_PROJECT_ID")"
+
+if [ ! -f "${ENV_DIR}/BW_PROJECT_ID" ]; then
+    echo "BW_PROJECT_ID was not set. Aborting" | indent
+    exit 1
+fi
+BW_PROJECT_ID="$(cat "${ENV_DIR}/BW_PROJECT_ID")"
 
 DOWNLOAD_URL="https://github.com/bitwarden/sdk/releases/download/bws-v1.0.0/bws-x86_64-unknown-linux-gnu-1.0.0.zip"
 echo "DOWNLOAD_URL = " $DOWNLOAD_URL | indent
-
-# shellcheck source=lib/utils.sh
-source "${BUILDPACK_DIR}/lib/utils.sh"
 
 cd "$BUILDPACK_DIR"
 # Download the BitWarden CLI in the cache directory
@@ -70,7 +68,7 @@ if ! ./bws --version; then
 fi
 
 # Load secrets and export as environment variables, writing to env.sh
-"./bws" secret list --access-token ${BW_ACCESS_TOKEN} \
+"./bws" secret list --access-token "$BW_ACCESS_TOKEN" "$BW_PROJECT_ID" \
 | grep -E '"key"|"value"' \
 | sed -E 's/.*"key": "(.*)",/\1/;s/.*"value": "(.*)"/\1/;s/,$//' \
 | awk 'NR%2{key=$0; getline; if (!ENVIRON[key]) printf "export %s=\"%s\"\n", key, $0}' \
@@ -78,7 +76,6 @@ fi
 
 # Source the export file to load the environment variables for the next script (but not for the heroku app)
 source "$BUILDPACK_DIR/export"
-#cat "$BUILDPACK_DIR/export" | indent
 
 cd "$BUILDPACK_DIR"
 # Switch to the environment directory
@@ -86,40 +83,29 @@ cd "$ENV_DIR"
 echo "ENV_DIR = " "$ENV_DIR" | indent
 ls -la
 
-#while IFS= read -r line; do
-#  # Extract the key from the line
-#  key=$(echo "$line" | cut -d'=' -f1 | cut -d' ' -f2)
-#  value=$(echo "$line" | cut -d'=' -f2 | sed 's/^"//;s/"$//')
-#  # Add a file with the value
-#  echo "$value" > "$key"
-#done < "$BUILDPACK_DIR/export"
+while IFS= read -r line; do
+  # Extract the key from the line
+  key=$(echo "$line" | cut -d'=' -f1 | cut -d' ' -f2)
+  value=$(echo "$line" | cut -d'=' -f2 | sed 's/^"//;s/"$//')
+  # Add a file with the value
+  echo "$value" > "$key"
+done < "$BUILDPACK_DIR/export"
 
 cd "$BUILDPACK_DIR"
 # Switch back to the build directory
 cd "$BUILD_DIR"
 
-#mkdir -p ".profile.d"
-
 PROFILE_ENV_FILEPATH="${BUILD_DIR}/.profile.d/bws_env.sh"
 mkdir -p "$(dirname "$PROFILE_ENV_FILEPATH")"
 # Write the environment variables to the env file
-# Read the file 'export' and replace each line value by the environment variable key
 while IFS= read -r line; do
   # Extract the key from the line
   key=$(echo "$line" | cut -d'=' -f1 | cut -d' ' -f2)
   value=$(echo "$line" | cut -d'=' -f2 | sed 's/^"//;s/"$//')
-  # Replace the value with the environment variable key
-#  echo "export $key=\${$key}"
   echo "export $key=\"$value\""
 done < "$BUILDPACK_DIR/export" > "$PROFILE_ENV_FILEPATH"
-#echo "export TEST123=ABC123" >> "$PROFILE_ENV_FILEPATH"
-#
+
 chmod +x "$PROFILE_ENV_FILEPATH"
-cat "$PROFILE_ENV_FILEPATH" | indent
-
-# Clean up
-#rm "${BUILDPACK_DIR}/export"
-
-#export_env_dir "$ENV_DIR"
+#cat "$PROFILE_ENV_FILEPATH" | indent
 
 echo "BitWarden secrets loaded successfully" | indent
