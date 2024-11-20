@@ -76,12 +76,14 @@ fi
 | awk 'NR%2{key=$0; getline; if (!ENVIRON[key]) printf "export %s=\"%s\"\n", key, $0}' \
 > "$BUILDPACK_DIR/export"
 
+# Source the export file to load the environment variables for the next script (but not for the heroku app)
 source "$BUILDPACK_DIR/export"
-cat "$BUILDPACK_DIR/export" | indent
+#cat "$BUILDPACK_DIR/export" | indent
 
 cd "$BUILDPACK_DIR"
 # Switch to the environment directory
 cd "$ENV_DIR"
+echo "ENV_DIR = " "$ENV_DIR" | indent
 ls -la
 
 #while IFS= read -r line; do
@@ -100,14 +102,15 @@ cd "$BUILD_DIR"
 
 # Write the environment variables to the env file
 # Read the file 'export' and replace each line value by the environment variable key
-#while IFS= read -r line; do
-#  # Extract the key from the line
-#  key=$(echo "$line" | cut -d'=' -f1 | cut -d' ' -f2)
-#  # Replace the value with the environment variable key
-#  echo "export $key=\${$key}"
-#done < "$BUILDPACK_DIR/export" > ".profile.d/bws_env.sh"
+while IFS= read -r line; do
+  # Extract the key from the line
+  key=$(echo "$line" | cut -d'=' -f1 | cut -d' ' -f2)
+  # Replace the value with the environment variable key
+  echo "export $key=\${$key}"
+done < "$BUILDPACK_DIR/export" > ".profile.d/bws_env.sh"
 #
-#chmod +x ".profile.d/bws_env.sh"
+chmod +x ".profile.d/bws_env.sh"
+cat ".profile.d/bws_env.sh" | indent
 
 # Clean up
 #rm "${BUILDPACK_DIR}/export"
